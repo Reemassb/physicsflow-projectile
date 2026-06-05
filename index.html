@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PhysicsFlow Projectile Motion Explorer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0b1f4d; --blue:#1e88d8; --sky:#eaf6ff; --ink:#14213d;
+    --green:#1d9a63; --orange:#f28c28; --red:#d94141; --soft:#f7fbff;
+    --line:#c8d8e8; --card:#ffffff; --purple:#7c3aed;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'DM Sans',Arial,sans-serif;background:linear-gradient(180deg,#f0f7ff,#fff);color:var(--ink)}
+  header{background:var(--navy);color:#fff;padding:18px 16px;border-bottom:5px solid var(--blue)}
+  .brand{max-width:1100px;margin:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .logo{width:60px;height:60px;border-radius:14px;background:var(--blue);color:#fff;display:grid;place-items:center;font-weight:900;font-size:22px;letter-spacing:-1px;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+  h1{margin:0;font-size:clamp(20px,3.5vw,36px);font-weight:800;letter-spacing:-.5px}
+  .subtitle{margin:4px 0 0;color:#c9e8ff;font-weight:600;font-size:14px}
+  nav{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line);z-index:5;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+  .tabs{max-width:1100px;margin:auto;display:flex;gap:6px;padding:10px;overflow-x:auto}
+  .tab{border:2px solid var(--line);background:#fff;color:var(--navy);padding:9px 14px;border-radius:999px;font-weight:800;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;font-size:14px;transition:all .15s}
+  .tab:hover{border-color:var(--blue);color:var(--blue)}
+  .tab.active{background:var(--blue);border-color:var(--blue);color:#fff}
+  main{max-width:1100px;margin:20px auto;padding:0 14px}
+  .panel{display:none}.panel.active{display:block}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 6px 20px rgba(10,40,90,.07)}
+  h2{color:var(--navy);font-size:26px;margin:0 0 16px;font-weight:800}
+  h3{color:var(--blue);margin:0 0 10px;font-size:16px;font-weight:800}
+  .tag{display:inline-block;background:var(--sky);color:var(--navy);padding:5px 10px;border-radius:999px;font-weight:700;margin:3px;font-size:13px}
+  .formula{font-size:16px;background:#f4f8ff;border-left:4px solid var(--blue);padding:11px 14px;border-radius:10px;margin:10px 0;font-weight:700;font-family:'DM Mono',monospace}
+  .tip{border-left:4px solid var(--orange);background:#fff8ef;padding:12px;border-radius:10px;font-size:14px}
+  .warn{border-left:4px solid var(--red);background:#fff3f3;padding:12px;border-radius:10px;font-size:14px}
+  .ok{border-left:4px solid var(--green);background:#effff7;padding:12px;border-radius:10px;font-size:14px}
+  label{font-weight:700;display:block;margin:12px 0 5px;font-size:14px}
+  input[type=range]{width:100%;accent-color:var(--blue)}
+  select,input[type=number]{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:10px;font-size:15px;font-family:'DM Sans',sans-serif}
+  select:focus,input:focus{outline:none;border-color:var(--blue)}
+  .value{font-weight:900;color:var(--blue)}
+  button{background:var(--blue);color:#fff;border:0;padding:10px 16px;border-radius:10px;font-weight:800;cursor:pointer;margin:5px 4px 5px 0;font-family:'DM Sans',sans-serif;font-size:14px;transition:opacity .15s}
+  button:hover{opacity:.85}
+  button.secondary{background:var(--navy)}
+  button.ghost{background:#fff;color:var(--navy);border:2px solid var(--line)}
+  button.ghost:hover{border-color:var(--blue);color:var(--blue)}
+  button.green{background:var(--green)}
+  canvas{width:100%;height:360px;background:#f9fcff;border:1.5px solid var(--line);border-radius:14px;display:block}
+  .smallCanvas{height:220px}
+  .data{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:12px}
+  .metric{background:var(--sky);border-radius:12px;padding:10px;text-align:center;font-size:13px;line-height:1.4}
+  .metric b{font-size:18px;color:var(--navy);display:block;font-weight:900}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  th{background:var(--sky);color:var(--navy);font-weight:800}
+  tr:hover td{background:#f4f9ff}
+  .question{margin:12px 0;padding:14px;border:1.5px solid var(--line);border-radius:14px;background:#fff;transition:border-color .2s}
+  .question.correct-q{border-color:var(--green);background:#f0fff8}
+  .question.wrong-q{border-color:var(--red);background:#fff5f5}
+  .question label{font-weight:500;margin:4px 0;display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
+  .feedback{font-weight:700;margin-top:8px;font-size:14px}
+  .correct{color:var(--green)}.wrong{color:var(--red)}
+  .footer{margin:30px 0;color:#60718a;text-align:center;font-size:13px}
+  .pillrow{display:flex;flex-wrap:wrap;gap:6px}
+  .mono{font-family:'DM Mono',monospace}
+  .mini{font-size:13px;color:#53657c;margin:6px 0}
+  .two{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+  @media(max-width:850px){.two{grid-template-columns:1fr}canvas{height:280px}}
+  .badge{display:inline-block;background:var(--purple);color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:800;margin-left:6px;vertical-align:middle}
+  .solution-box{background:#f4f8ff;border:1.5px solid var(--blue);border-radius:12px;padding:14px;margin-top:10px;font-size:14px;display:none}
+  .solution-box.visible{display:block}
+  .solution-box ol{margin:0;padding-left:18px}
+  .solution-box li{margin:6px 0}
+  .score-bar{height:8px;background:#e0eaf5;border-radius:99px;margin:8px 0;overflow:hidden}
+  .score-fill{height:100%;border-radius:99px;background:var(--blue);transition:width .5s ease}
+  .sym-line{stroke:var(--orange,#f28c28);stroke-dasharray:6,4;stroke-width:1.5}
+  .disabled-note{color:#888;font-size:13px;font-style:italic;margin:4px 0}
+  .sim-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px 24px;align-items:start}
+  .sim-controls label{margin-top:0}
+  .match-card{transition:border-color .2s,background .2s}
+  .match-card.correct-q{border-color:var(--green);background:#f0fff8}
+  .match-card.wrong-q{border-color:var(--red);background:#fff5f5}
+  .match-result{margin-top:8px;font-weight:700;font-size:14px;min-height:18px}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">PF</div>
+    <div>
+      <h1>PhysicsFlow — Projectile Motion Explorer</h1>
+      <p class="subtitle">Interactive Physics Learning • Grade 11–12 • IB / IGCSE / A-Level</p>
+    </div>
+  </div>
+</header>
+<nav>
+  <div class="tabs">
+    <button class="tab active" data-tab="learn">Learn</button>
+    <button class="tab" data-tab="components">Components</button>
+    <button class="tab" data-tab="simulate">Simulate</button>
+    <button class="tab" data-tab="investigate">Investigate</button>
+    <button class="tab" data-tab="graphs">Graphs</button>
+    <button class="tab" data-tab="challenge">Challenge</button>
+    <button class="tab" data-tab="quiz">Quiz</button>
+  </div>
+</nav>
+<main>
+
+<!-- LEARN TAB -->
+<section id="learn" class="panel active">
+<h2>Learn: What is Projectile Motion?</h2>
+<div class="grid">
+  <div class="card">
+    <h3>Key Idea</h3>
+    <p>A projectile is an object that moves through the air after being launched. If air resistance is ignored, the only force acting after launch is gravity.</p>
+    <div class="ok"><b>Independence Principle:</b> Horizontal and vertical motions are independent of each other, but they share the same time interval.</div>
+  </div>
+  <div class="card">
+    <h3>Core Vocabulary</h3>
+    <div class="pillrow">
+      <span class="tag">trajectory</span><span class="tag">range</span><span class="tag">time of flight</span>
+      <span class="tag">maximum height</span><span class="tag">v<sub>ix</sub> horizontal component</span>
+      <span class="tag">v<sub>iy</sub> vertical component</span><span class="tag">g = 9.8 m s⁻²</span>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Equations</h3>
+    <div class="formula">Horizontal:  d<sub>x</sub> = v<sub>ix</sub> t</div>
+    <div class="formula">Vertical:    d<sub>y</sub> = v<sub>iy</sub> t + ½at²</div>
+    <div class="formula">Vertical:    v<sub>fy</sub> = v<sub>iy</sub> + at</div>
+    <div class="formula">Vertical:    v<sub>fy</sub>² = v<sub>iy</sub>² + 2ad<sub>y</sub></div>
+    <p class="mini">Take a = −9.8 m s⁻² when upward is the positive direction.</p>
+  </div>
+  <div class="card">
+    <h3>Common Mistakes</h3>
+    <div class="warn" style="margin-bottom:8px">❌ Never plug the total launch speed directly into horizontal or vertical equations. Always resolve into components first.</div>
+    <div class="warn">❌ The horizontal velocity does <b>not</b> change during flight (no air resistance). Do not subtract g from it.</div>
+  </div>
+  <div class="card">
+    <h3>Sign Convention</h3>
+    <div class="tip">Choose upward as positive (+). Then:<br><br>
+    • v<sub>iy</sub> is positive for angled launches<br>
+    • v<sub>iy</sub> = 0 for horizontal launches<br>
+    • a = −9.8 m s⁻² throughout<br>
+    • v<sub>fy</sub> is negative at landing (object moving downward)</div>
+  </div>
+  <div class="card">
+    <h3>Problem-Solving Steps</h3>
+    <ol style="margin:0;padding-left:18px;font-size:14px;line-height:2">
+      <li>Define positive direction.</li>
+      <li>Resolve v<sub>i</sub> into v<sub>ix</sub> and v<sub>iy</sub>.</li>
+      <li>Use vertical motion to find time of flight T.</li>
+      <li>Use d<sub>x</sub> = v<sub>ix</sub> × T to find range.</li>
+    </ol>
+  </div>
+</div>
+</section>
+
+<!-- COMPONENTS TAB -->
+<section id="components" class="panel">
+<h2>Components: Split the Launch Velocity</h2>
+<div class="two">
+  <div class="card">
+    <canvas id="compCanvas"></canvas>
+  </div>
+  <div class="card">
+    <h3>Adjust the launch</h3>
+    <label>Launch speed: <span id="cSpeedVal" class="value">20</span> m s⁻¹</label>
+    <input id="cSpeed" type="range" min="1" max="60" step="1" value="20">
+    <label>Launch angle: <span id="cAngleVal" class="value">35</span>°</label>
+    <input id="cAngle" type="range" min="0" max="90" step="1" value="35">
+    <div class="data">
+      <div class="metric">v<sub>ix</sub> = v<sub>i</sub> cos θ<br><b id="cvx">0</b> m s⁻¹</div>
+      <div class="metric">v<sub>iy</sub> = v<sub>i</sub> sin θ<br><b id="cvy">0</b> m s⁻¹</div>
+    </div>
+    <div class="formula">v<sub>ix</sub> = v<sub>i</sub> cos θ<br>v<sub>iy</sub> = v<sub>i</sub> sin θ<br>v<sub>i</sub>² = v<sub>ix</sub>² + v<sub>iy</sub>²</div>
+    <div class="ok" style="font-size:13px">The angle θ is measured from the horizontal. At θ = 0°, all velocity is horizontal. At θ = 90°, all velocity is vertical.</div>
+  </div>
+</div>
+</section>
+
+<!-- SIMULATE TAB -->
+<section id="simulate" class="panel">
+<h2>Simulate: Launch a Projectile</h2>
+<div class="card">
+  <canvas id="simCanvas" style="height:440px"></canvas>
+  <div style="margin-top:12px">
+    <button onclick="launchAnim()">▶ Launch Animation</button>
+    <button class="ghost" onclick="showFullPath()">Show Full Path</button>
+    <button class="secondary" onclick="clearSim()">Clear</button>
+  </div>
+</div>
+<div class="card" style="margin-top:16px">
+  <div class="sim-controls">
+    <div>
+      <label>Launch type</label>
+      <select id="launchType">
+        <option value="angle">Launched at an angle</option>
+        <option value="horizontal">Horizontally launched</option>
+      </select>
+    </div>
+    <div>
+      <label>Initial speed: <span id="speedVal" class="value">25</span> m s⁻¹</label>
+      <input id="speed" type="range" min="1" max="70" step="1" value="25">
+    </div>
+    <div>
+      <label>Angle: <span id="angleVal" class="value">40</span>°</label>
+      <input id="angle" type="range" min="1" max="89" step="1" value="40">
+      <p id="angleDisabledNote" class="disabled-note" style="display:none">Angle fixed at 0° for horizontal launch.</p>
+    </div>
+    <div>
+      <label>Launch height: <span id="heightVal" class="value">0</span> m</label>
+      <input id="height" type="range" min="0" max="60" step="1" value="0">
+    </div>
+  </div>
+  <div class="data" style="margin-top:16px">
+    <div class="metric">Time of flight<br><b id="timeOut">—</b> s</div>
+    <div class="metric">Range<br><b id="rangeOut">—</b> m</div>
+    <div class="metric">Max height<br><b id="maxHOut">—</b> m</div>
+    <div class="metric">v<sub>ix</sub><br><b id="vxOut">—</b> m s⁻¹</div>
+    <div class="metric">v<sub>iy</sub><br><b id="vyOut">—</b> m s⁻¹</div>
+    <div class="metric">v<sub>fy</sub> at landing<br><b id="vfyOut">—</b> m s⁻¹</div>
+  </div>
+</div>
+</section>
+
+<!-- INVESTIGATE TAB -->
+<section id="investigate" class="panel">
+<h2>Investigate: What Changes the Range?</h2>
+<div class="grid">
+  <div class="card">
+    <h3>Angle Comparison</h3>
+    <p class="mini">Keep speed constant. Launches from ground level. Ignore air resistance.</p>
+    <label>Speed for comparison: <span id="invSpeedVal" class="value">30</span> m s⁻¹</label>
+    <input id="invSpeed" type="range" min="5" max="60" value="30">
+    <button onclick="makeAngleTable()">Generate Table</button>
+    <div id="angleTable"></div>
+  </div>
+  <div class="card">
+    <h3>Thinking Questions</h3>
+    <p style="font-size:14px">For launches from ground level, which angle gives the greatest range?</p>
+    <button onclick="showInvestigationAnswer()">Show Answer</button>
+    <div id="investAnswer" class="feedback"></div>
+    <div class="tip" style="margin-top:10px">
+      <b>Complementary angles</b> (e.g. 30° and 60°) give equal ranges when launched from and landing at the same height. This is because sin(2θ) = sin(2(90°−θ)).
+    </div>
+    <div class="formula" style="margin-top:12px">R = v<sub>i</sub>² sin(2θ) / g <span style="font-size:12px;color:#666">(ground-level only)</span></div>
+  </div>
+</div>
+</section>
+
+<!-- GRAPHS TAB -->
+<section id="graphs" class="panel">
+<h2>Graphs: Match Each Graph to Its Quantity</h2>
+<div class="card" style="margin-bottom:16px">
+  <p class="mini" style="margin:0">Below are the four standard motion graphs for a projectile launched at an angle (no air resistance). The vertical axis is unlabelled — identify each graph from its <b>shape and slope</b> alone, then choose the quantity it represents.</p>
+</div>
+<div class="grid" id="matchGrid"></div>
+<div class="card" style="margin-top:16px">
+  <button onclick="checkMatches()">✔ Check Answers</button>
+  <button class="ghost" onclick="shuffleGraphs()">↺ Shuffle &amp; Retry</button>
+  <div id="matchFb" class="feedback"></div>
+  <div id="matchExplain" class="solution-box"></div>
+</div>
+</section>
+
+<!-- CHALLENGE TAB -->
+<section id="challenge" class="panel">
+<h2>Challenge: Predict Before You Check</h2>
+<div class="grid">
+  <div class="card">
+    <h3>Problem Generator</h3>
+    <p id="challengeText" style="font-size:15px;line-height:1.6"></p>
+    <button onclick="newChallenge()">New Challenge</button>
+    <label>Your answer for range / distance (m)</label>
+    <input id="studentAns" type="number" step="0.1" placeholder="Enter your answer…">
+    <button class="green" onclick="checkChallenge()">✔ Check Answer</button>
+    <div id="challengeFb" class="feedback"></div>
+    <div id="solutionBox" class="solution-box">
+      <b>Worked Solution:</b>
+      <ol id="solutionSteps"></ol>
+    </div>
+    <button class="ghost" id="showSolBtn" onclick="toggleSolution()" style="display:none;margin-top:6px">Show Worked Solution</button>
+  </div>
+  <div class="card">
+    <h3>Method Reminder</h3>
+    <ol style="font-size:14px;padding-left:18px;line-height:2.1">
+      <li>Define upward as positive.</li>
+      <li>Resolve v<sub>i</sub> → v<sub>ix</sub> and v<sub>iy</sub>.</li>
+      <li>Use vertical equation to find time T.</li>
+      <li>Use d<sub>x</sub> = v<sub>ix</sub> × T for range.</li>
+    </ol>
+    <div class="formula">d<sub>x</sub> = v<sub>ix</sub> × T</div>
+    <div class="formula">0 = h + v<sub>iy</sub>T + ½(−9.8)T²</div>
+    <div class="tip" style="font-size:13px">For horizontal launches: v<sub>iy</sub> = 0, so T = √(2h/g)</div>
+  </div>
+</div>
+</section>
+
+<!-- QUIZ TAB -->
+<section id="quiz" class="panel">
+<h2>Quiz: Check Your Understanding</h2>
+<div class="card" id="quizBox"></div>
+<div style="margin-top:12px">
+  <button onclick="gradeQuiz()">Grade Quiz</button>
+  <button class="ghost" onclick="resetQuiz()">Reset</button>
+</div>
+<div id="quizScore" class="feedback"></div>
+<div class="score-bar"><div class="score-fill" id="scoreFill" style="width:0%"></div></div>
+</section>
+
+<div class="footer">© PhysicsFlow — Interactive Physics Learning • Projectile Motion Explorer</div>
+</main>
+
+<script>
+/* ─── Constants & State ─────────────────────────────────── */
+const G = 9.8; // magnitude; use signs explicitly in formulas
+let anim = null;
+let currentChallenge = { answer: 0, steps: [] };
+let lastAngleValue = 40; // FIX: preserve angle when switching type
+
+/* ─── Tab Navigation ─────────────────────────────────────── */
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById(b.dataset.tab).classList.add('active');
+  const t = b.dataset.tab;
+  if (t === 'components') setTimeout(drawComponents, 50);
+  if (t === 'simulate')   setTimeout(() => { updateSimLabels(); simHasLaunched ? drawSimCanvas(null) : drawReadyState(); }, 50);
+  if (t === 'graphs')     setTimeout(() => { if (!document.getElementById('matchGrid').children.length) shuffleGraphs(); else buildMatchGrid(); }, 50);
+  if (t === 'investigate') makeAngleTable();
+}));
+
+/* ─── Helpers ─────────────────────────────────────────────── */
+function val(id)    { return parseFloat(document.getElementById(id).value); }
+function rad(d)     { return d * Math.PI / 180; }
+function round(x, n=2) { return Number(x).toFixed(n); }
+
+/* ─── Physics Core (FIX: unified, robust, consistent signs) ── */
+function projectileParams() {
+  const type   = document.getElementById('launchType').value;
+  const speed  = val('speed');
+  const angle  = type === 'horizontal' ? 0 : val('angle');
+  const h      = val('height');
+  const vx     = speed * Math.cos(rad(angle));
+  const vy     = speed * Math.sin(rad(angle));  // positive upward
+
+  // Solve: h + vy*T - 0.5*G*T^2 = 0  →  T = (vy + sqrt(vy²+2Gh))/G
+  const disc = vy * vy + 2 * G * h;
+  if (disc < 0) return null; // shouldn't happen with valid inputs
+  const T = (vy + Math.sqrt(disc)) / G;
+  const range = vx * T;
+  const maxH = vy > 0 ? h + (vy * vy) / (2 * G) : h;
+  const vfy  = vy - G * T;  // negative at landing (downward)
+
+  return { speed, angle, h, vx, vy, T, range, maxH, vfy };
+}
+
+/* FIX: Separate ground-level range function – consistent signs */
+function groundRangeAngle(speed, angle) {
+  const vx = speed * Math.cos(rad(angle));
+  const vy = speed * Math.sin(rad(angle));
+  const T = (2 * vy) / G;
+  return { range: vx * T, time: T, height: (vy * vy) / (2 * G) };
+}
+
+/* ─── Canvas Setup (FIX: defer to avoid 0×0 on first render) ── */
+function setupCanvas(c) {
+  const dpr = window.devicePixelRatio || 1;
+  const r   = c.getBoundingClientRect();
+  const w   = r.width  || c.parentElement.clientWidth  || 600;
+  const h   = r.height || (c.classList.contains('smallCanvas') ? 220 : 360);
+  c.width   = w * dpr;
+  c.height  = h * dpr;
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+/* ─── Shared axis drawing ─────────────────────────────────── */
+function axes(ctx, w, h, xLabel='x', yLabel='y') {
+  ctx.clearRect(0, 0, w, h);
+  // grid
+  ctx.lineWidth = 1; ctx.strokeStyle = '#ddeef8';
+  for (let x = 60; x < w - 10; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, 10); ctx.lineTo(x, h - 40); ctx.stroke();
+  }
+  for (let y = 10; y < h - 40; y += 35) {
+    ctx.beginPath(); ctx.moveTo(55, y); ctx.lineTo(w - 10, y); ctx.stroke();
+  }
+  // axes
+  ctx.strokeStyle = '#0b1f4d'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(55, h - 40); ctx.lineTo(w - 10, h - 40); // x-axis
+  ctx.moveTo(55, h - 40); ctx.lineTo(55, 10);           // y-axis
+  ctx.stroke();
+  // labels
+  ctx.fillStyle = '#3a5070'; ctx.font = 'bold 12px DM Sans,Arial';
+  ctx.fillText(xLabel, w - 30, h - 26);
+  ctx.fillText(yLabel, 6, 20);
+}
+
+/* ─── Components tab ─────────────────────────────────────── */
+function drawComponents() {
+  const s = val('cSpeed'), a = val('cAngle');
+  const vx = s * Math.cos(rad(a)), vy = s * Math.sin(rad(a));
+  document.getElementById('cSpeedVal').textContent = s;
+  document.getElementById('cAngleVal').textContent = a;
+  document.getElementById('cvx').textContent = round(vx);
+  document.getElementById('cvy').textContent = round(vy);
+
+  const { ctx, w, h } = setupCanvas(document.getElementById('compCanvas'));
+  axes(ctx, w, h, 'x', 'y');
+
+  const ox = w * 0.22, oy = h * 0.78;
+  const scale = Math.min((w * 0.62) / (s || 1), (h * 0.6) / (s || 1));
+
+  function arrow(dx, dy, col, label, dashed = false) {
+    if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3;
+    if (dashed) ctx.setLineDash([5, 4]); else ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(ox + dx * scale, oy - dy * scale);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // arrowhead
+    const ex = ox + dx * scale, ey = oy - dy * scale;
+    const angle2 = Math.atan2(-dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - 12 * Math.cos(angle2 - 0.4), ey + 12 * Math.sin(angle2 - 0.4));
+    ctx.lineTo(ex - 12 * Math.cos(angle2 + 0.4), ey + 12 * Math.sin(angle2 + 0.4));
+    ctx.closePath(); ctx.fill();
+    ctx.font = 'bold 14px DM Sans,Arial';
+    const lx = ex + (dx >= 0 ? 8 : -40), ly = ey + (dy >= 0 ? -8 : 18);
+    ctx.fillText(label, lx, ly);
+  }
+
+  arrow(vx, 0, '#1d9a63', `vᵢₓ = ${round(vx)} m/s`);
+  arrow(0, vy, '#f28c28', `vᵢᵧ = ${round(vy)} m/s`);
+  arrow(vx, vy, '#1e88d8', `vᵢ = ${round(s)} m/s`);
+
+  // angle arc
+  if (a > 2 && a < 88) {
+    ctx.strokeStyle = '#1e88d8'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(ox, oy, 32, -rad(a), 0);
+    ctx.stroke();
+    ctx.fillStyle = '#1e88d8'; ctx.font = '13px DM Sans,Arial';
+    ctx.fillText(`${a}°`, ox + 36, oy - 8);
+  }
+
+  ctx.fillStyle = '#14213d'; ctx.font = 'bold 15px DM Sans,Arial';
+  ctx.fillText('Velocity Components', 62, 30);
+}
+
+['cSpeed', 'cAngle'].forEach(id =>
+  document.getElementById(id).addEventListener('input', drawComponents)
+);
+
+/* ─── Simulate tab ───────────────────────────────────────── */
+let simHasLaunched = false;
+
+function updateSimLabels() {
+  const speed  = val('speed');
+  const height = val('height');
+  const isHoriz = document.getElementById('launchType').value === 'horizontal';
+  const angle  = isHoriz ? 0 : val('angle');
+
+  document.getElementById('speedVal').textContent  = speed;
+  document.getElementById('angleVal').textContent  = angle;
+  document.getElementById('heightVal').textContent = height;
+
+  const p = projectileParams();
+  if (!p) {
+    ['timeOut','rangeOut','maxHOut','vxOut','vyOut','vfyOut'].forEach(id =>
+      document.getElementById(id).textContent = '—');
+    return;
+  }
+  document.getElementById('timeOut').textContent  = round(p.T);
+  document.getElementById('rangeOut').textContent = round(p.range);
+  document.getElementById('maxHOut').textContent  = round(p.maxH);
+  document.getElementById('vxOut').textContent    = round(p.vx);
+  document.getElementById('vyOut').textContent    = round(p.vy);
+  document.getElementById('vfyOut').textContent   = round(p.vfy);
+}
+
+function drawSimCanvas(tmark) {
+  // tmark = null → show full path; tmark = number → animate up to that time
+  const p = projectileParams();
+  const { ctx, w, h } = setupCanvas(document.getElementById('simCanvas'));
+  if (!p || p.T <= 0) { axes(ctx, w, h, 'x / m', 'y / m'); return; }
+  axes(ctx, w, h, 'x / m', 'y / m');
+
+  // FIXED world scale (not auto-fit) so different launches look genuinely different.
+  // Based on the largest values the sliders can produce, with a little headroom.
+  const WORLD_X = 520;   // max range across slider settings (~70 m/s at 45°)
+  const WORLD_Y = 260;   // max height + launch height
+  const sx   = (w - 80) / WORLD_X;
+  const sy   = (h - 60) / WORLD_Y;
+  const base = h - 40;
+  const ox   = 55;
+
+  const isAnimating = (tmark !== null);
+  const drawUpTo    = isAnimating ? tmark : p.T;
+
+  // Draw trajectory up to drawUpTo
+  ctx.strokeStyle = '#1e88d8'; ctx.lineWidth = 3; ctx.setLineDash([]);
+  ctx.beginPath();
+  const steps = 150;
+  for (let i = 0; i <= steps; i++) {
+    const t = Math.min(p.T * i / steps, drawUpTo);
+    const x = p.vx * t;
+    const y = p.h + p.vy * t - 0.5 * G * t * t;
+    const px = ox + x * sx, py = base - y * sy;
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    if (t >= drawUpTo) break;
+  }
+  ctx.stroke();
+
+  // Peak marker — only on full path
+  if (!isAnimating && p.vy > 0) {
+    const tPeak = p.vy / G;
+    const xp    = ox + p.vx * tPeak * sx;
+    const yp    = base - p.maxH * sy;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = '#f28c28'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(xp, yp - 4); ctx.lineTo(xp, yp - 22); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#f28c28'; ctx.font = '11px DM Sans,Arial';
+    ctx.fillText('max h', xp - 14, yp - 24);
+  }
+
+  // Ball
+  const tt = Math.min(drawUpTo, p.T);
+  const bx = p.vx * tt;
+  const by = p.h + p.vy * tt - 0.5 * G * tt * tt;
+  const ballX = ox + bx * sx;
+  const ballY = base - by * sy;
+
+  // Ball dot
+  ctx.fillStyle = '#d94141'; ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(ballX, ballY, 7, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#14213d'; ctx.font = 'bold 14px DM Sans,Arial';
+  ctx.fillText('Trajectory', 62, 24);
+}
+
+function drawReadyState() {
+  // Empty field with just the launch-point dot — trajectory only appears after launch
+  const p = projectileParams();
+  const { ctx, w, h } = setupCanvas(document.getElementById('simCanvas'));
+  axes(ctx, w, h, 'x / m', 'y / m');
+  if (!p || p.T <= 0) return;
+
+  const WORLD_Y = 260;
+  const sy   = (h - 60) / WORLD_Y;
+  const base = h - 40;
+
+  // launch-point dot
+  ctx.fillStyle = '#d94141'; ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(55, base - p.h * sy, 7, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function showFullPath() {
+  cancelAnimationFrame(anim);
+  simHasLaunched = true;
+  drawSimCanvas(null);
+}
+
+function clearSim() {
+  simHasLaunched = false;
+  cancelAnimationFrame(anim);
+  drawReadyState();
+}
+
+function launchAnim() {
+  cancelAnimationFrame(anim);
+  simHasLaunched = true;
+  const p = projectileParams();
+  if (!p || p.T <= 0) return;
+  const ANIM_DURATION = Math.max(1500, Math.min(4000, p.T * 800));
+  let start = null;
+  function step(ts) {
+    if (!start) start = ts;
+    const elapsed = ts - start;
+    const frac    = Math.min(elapsed / ANIM_DURATION, 1);
+    drawSimCanvas(frac * p.T);
+    if (frac < 1) anim = requestAnimationFrame(step);
+    else drawSimCanvas(null); // show full path when done
+  }
+  requestAnimationFrame(step);
+}
+
+// Launch type dropdown
+document.getElementById('launchType').addEventListener('change', function() {
+  cancelAnimationFrame(anim);
+  simHasLaunched = false;
+  const angleSlider = document.getElementById('angle');
+  const angleNote   = document.getElementById('angleDisabledNote');
+  if (this.value === 'horizontal') {
+    lastAngleValue        = val('angle');
+    angleSlider.value     = 0;
+    angleSlider.disabled  = true;
+    angleNote.style.display = 'block';
+  } else {
+    angleSlider.value     = lastAngleValue;
+    angleSlider.disabled  = false;
+    angleNote.style.display = 'none';
+  }
+  updateSimLabels();
+  drawReadyState();
+});
+
+// Speed, angle, height sliders — changing parameters resets to ready state
+document.getElementById('speed').addEventListener('input', function() {
+  cancelAnimationFrame(anim);
+  simHasLaunched = false;
+  document.getElementById('speedVal').textContent = this.value;
+  updateSimLabels();
+  drawReadyState();
+});
+
+document.getElementById('angle').addEventListener('input', function() {
+  cancelAnimationFrame(anim);
+  simHasLaunched = false;
+  document.getElementById('angleVal').textContent = this.value;
+  lastAngleValue = parseFloat(this.value);
+  updateSimLabels();
+  drawReadyState();
+});
+
+document.getElementById('height').addEventListener('input', function() {
+  cancelAnimationFrame(anim);
+  simHasLaunched = false;
+  document.getElementById('heightVal').textContent = this.value;
+  updateSimLabels();
+  drawReadyState();
+});
+
+/* ─── Investigate tab ────────────────────────────────────── */
+function makeAngleTable() {
+  const s = val('invSpeed');
+  document.getElementById('invSpeedVal').textContent = s;
+  const angles = [15, 30, 45, 60, 75];
+  let html = '<table><tr><th>Angle (°)</th><th>Time (s)</th><th>Max height (m)</th><th>Range (m)</th></tr>';
+  angles.forEach(a => {
+    const r   = groundRangeAngle(s, a);
+    const comp = groundRangeAngle(s, 90 - a);
+    const same = Math.abs(r.range - comp.range) < 0.05;
+    html += `<tr>
+      <td>${a}°${same && a !== 45 ? ' <span style="font-size:11px;color:#7c3aed">= same range as '+(90-a)+'°</span>' : ''}</td>
+      <td>${round(r.time)}</td>
+      <td>${round(r.height)}</td>
+      <td><b>${round(r.range)}</b></td>
+    </tr>`;
+  });
+  html += '</table>';
+  document.getElementById('angleTable').innerHTML = html;
+}
+
+document.getElementById('invSpeed').addEventListener('input', () => {
+  document.getElementById('invSpeedVal').textContent = val('invSpeed');
+  makeAngleTable();
+});
+
+function showInvestigationAnswer() {
+  document.getElementById('investAnswer').innerHTML =
+    '<span class="correct">✔ 45° gives the greatest range for ground-level launches when air resistance is ignored. R = v² sin(2θ)/g is maximum when 2θ = 90°, i.e. θ = 45°.</span>';
+}
+
+/* ─── Graphs tab ─────────────────────────────────────────── */
+/* ─── Graphs tab: matching activity ──────────────────────── */
+// Fixed standard projectile (launched at an angle, no air resistance)
+const GRAPH_DEFS = [
+  { key:'xt',  label:'x – t  (horizontal position vs time)',
+    explain:'Horizontal position increases at a constant rate → straight line through the origin with constant positive slope (because vₓ is constant).',
+    ylabel:'x / m',         fn:(t,T)=> 18*t,                 sym:false },
+  { key:'yt',  label:'y – t  (vertical position vs time)',
+    explain:'Vertical position rises then falls → a parabola (downward). The peak is at the time of maximum height where vᵧ = 0.',
+    ylabel:'y / m',         fn:(t,T)=> 20*t - 0.5*9.8*t*t,   sym:true },
+  { key:'vxt', label:'vₓ – t  (horizontal velocity vs time)',
+    explain:'No horizontal force, so vₓ never changes → a horizontal straight line (constant positive value).',
+    ylabel:'vₓ / m s⁻¹',    fn:(t,T)=> 18,                   sym:false },
+  { key:'vyt', label:'vᵧ – t  (vertical velocity vs time)',
+    explain:'Gravity changes vᵧ at a constant rate → a straight line with negative slope, starting positive, passing through zero at the peak, then negative.',
+    ylabel:'vᵧ / m s⁻¹',    fn:(t,T)=> 20 - 9.8*t,           sym:true },
+];
+const GRAPH_T = 4.08; // ~ time of flight for the standard shot (20 m/s up component)
+
+let graphOrder = [0,1,2,3];
+
+function plotStandardGraph(canvas, def) {
+  const { ctx, w, h } = setupCanvas(canvas);
+  axes(ctx, w, h, 't', '');   // no quantity label — identify by shape only
+  const N = 100;
+  const pts = [];
+  for (let i=0;i<=N;i++){ const t = GRAPH_T*i/N; pts.push([t, def.fn(t, GRAPH_T)]); }
+
+  const ys = pts.map(p=>p[1]);
+  const ymin = Math.min(...ys, 0), ymax = Math.max(...ys, 0.01);
+  const yRange = (ymax - ymin) || 0.01;
+  const sx = (w-80)/GRAPH_T, sy = (h-60)/yRange, base = h-40;
+
+  // zero line if graph crosses zero
+  if (ymin < 0 && ymax > 0) {
+    ctx.setLineDash([3,3]); ctx.strokeStyle='#bbb'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(55, base-(0-ymin)*sy); ctx.lineTo(w-10, base-(0-ymin)*sy); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.strokeStyle='#1e88d8'; ctx.lineWidth=2.5; ctx.setLineDash([]);
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const px=55+p[0]*sx, py=base-(p[1]-ymin)*sy; i===0?ctx.moveTo(px,py):ctx.lineTo(px,py); });
+  ctx.stroke();
+}
+
+function buildMatchGrid() {
+  const grid = document.getElementById('matchGrid');
+  const options = GRAPH_DEFS.map((d,i)=>`<option value="${i}">${d.label}</option>`).join('');
+  let html = '';
+  graphOrder.forEach((defIdx, slot) => {
+    html += `
+      <div class="card match-card" id="matchCard${slot}" data-correct="${defIdx}">
+        <div style="font-weight:800;color:var(--navy);margin-bottom:8px">Graph ${slot+1}</div>
+        <canvas id="matchCanvas${slot}" class="smallCanvas"></canvas>
+        <label style="margin-top:10px">This graph shows:</label>
+        <select id="matchSelect${slot}">
+          <option value="">— choose quantity —</option>
+          ${options}
+        </select>
+        <div class="match-result" id="matchResult${slot}"></div>
+      </div>`;
+  });
+  grid.innerHTML = html;
+  // draw each graph
+  graphOrder.forEach((defIdx, slot) => {
+    plotStandardGraph(document.getElementById('matchCanvas'+slot), GRAPH_DEFS[defIdx]);
+  });
+}
+
+function shuffleGraphs() {
+  // Fisher–Yates
+  graphOrder = [0,1,2,3];
+  for (let i = graphOrder.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [graphOrder[i], graphOrder[j]] = [graphOrder[j], graphOrder[i]];
+  }
+  document.getElementById('matchFb').textContent = '';
+  document.getElementById('matchExplain').classList.remove('visible');
+  document.getElementById('matchExplain').innerHTML = '';
+  buildMatchGrid();
+}
+
+function checkMatches() {
+  let correct = 0, answered = 0;
+  graphOrder.forEach((defIdx, slot) => {
+    const sel = document.getElementById('matchSelect'+slot);
+    const card = document.getElementById('matchCard'+slot);
+    const result = document.getElementById('matchResult'+slot);
+    card.classList.remove('correct-q','wrong-q');
+    if (sel.value === '') { result.innerHTML=''; return; }
+    answered++;
+    if (parseInt(sel.value) === defIdx) {
+      correct++;
+      card.classList.add('correct-q');
+      result.innerHTML = '<span class="correct">✔ Correct</span>';
+    } else {
+      card.classList.add('wrong-q');
+      result.innerHTML = '<span class="wrong">✘ Try again</span>';
+    }
+  });
+
+  const fb = document.getElementById('matchFb');
+  if (answered < 4) {
+    fb.innerHTML = `<span class="wrong">Please choose a quantity for all four graphs (${answered}/4 done).</span>`;
+    return;
+  }
+  fb.innerHTML = `Score: <span class="${correct===4?'correct':'wrong'}">${correct}/4 correct</span>`;
+
+  // Show explanations once all are answered
+  const ex = document.getElementById('matchExplain');
+  let html = '<b>Why each graph looks the way it does:</b><ol>';
+  GRAPH_DEFS.forEach(d => { html += `<li><b>${d.label.split('(')[0].trim()}:</b> ${d.explain}</li>`; });
+  html += '</ol>';
+  ex.innerHTML = html;
+  ex.classList.add('visible');
+}
+
+/* ─── Challenge tab ──────────────────────────────────────── */
+function newChallenge() {
+  const type = Math.random() < 0.5 ? 'horizontal' : 'angle';
+  let answer, steps, text;
+
+  if (type === 'horizontal') {
+    const heights = [20, 30, 40, 50, 60];
+    const speeds  = [8, 10, 12, 15, 18];
+    const h  = heights[Math.floor(Math.random() * heights.length)];
+    const vx = speeds[Math.floor(Math.random() * speeds.length)];
+    const T  = Math.sqrt(2 * h / G);
+    const dx = vx * T;
+    answer = dx;
+    text = `A ball rolls horizontally off a platform at <b>${vx} m s⁻¹</b>. The platform is <b>${h} m</b> above the ground. Find the horizontal distance traveled before it hits the ground.`;
+    steps = [
+      `v<sub>iy</sub> = 0 (horizontal launch)`,
+      `Vertical: h = ½gT²  →  T = √(2 × ${h} / ${G}) = ${round(T)} s`,
+      `Horizontal: d<sub>x</sub> = v<sub>ix</sub> × T = ${vx} × ${round(T)} = <b>${round(dx)} m</b>`
+    ];
+  } else {
+    const speedList = [20, 25, 30, 35, 40];
+    const angleList = [30, 40, 45, 50, 60];
+    const s = speedList[Math.floor(Math.random() * speedList.length)];
+    const a = angleList[Math.floor(Math.random() * angleList.length)];
+    const vx = s * Math.cos(rad(a)), vy = s * Math.sin(rad(a));
+    const T  = (2 * vy) / G;
+    const dx = vx * T;
+    answer = dx;
+    text = `A projectile is launched from ground level at <b>${s} m s⁻¹</b> and <b>${a}°</b> above the horizontal. Find the range. Ignore air resistance.`;
+    steps = [
+      `v<sub>ix</sub> = ${s} cos ${a}° = ${round(vx)} m s⁻¹`,
+      `v<sub>iy</sub> = ${s} sin ${a}° = ${round(vy)} m s⁻¹`,
+      `At landing y = 0: T = 2v<sub>iy</sub>/g = 2 × ${round(vy)} / ${G} = ${round(T)} s`,
+      `Range = v<sub>ix</sub> × T = ${round(vx)} × ${round(T)} = <b>${round(dx)} m</b>`
+    ];
+  }
+
+  currentChallenge = { answer, steps };
+  document.getElementById('challengeText').innerHTML = text;
+  document.getElementById('challengeFb').textContent = '';
+  document.getElementById('studentAns').value = '';
+  document.getElementById('solutionBox').classList.remove('visible');
+  document.getElementById('showSolBtn').style.display = 'none';
+}
+
+function checkChallenge() {
+  const ans     = parseFloat(document.getElementById('studentAns').value);
+  const correct = currentChallenge.answer;
+  if (isNaN(ans)) {
+    document.getElementById('challengeFb').innerHTML = '<span class="wrong">Please enter a number.</span>';
+    return;
+  }
+  // FIX: tolerance scales with answer magnitude
+  const tol = Math.max(2, correct * 0.03);
+  const diff = Math.abs(ans - correct);
+  if (diff <= tol) {
+    document.getElementById('challengeFb').innerHTML =
+      `<span class="correct">✔ Correct! Expected ≈ ${round(correct)} m.</span>`;
+  } else {
+    document.getElementById('challengeFb').innerHTML =
+      `<span class="wrong">✘ Not quite. Expected ≈ ${round(correct)} m. Check your working.</span>`;
+  }
+  document.getElementById('showSolBtn').style.display = 'inline-block';
+}
+
+function toggleSolution() {
+  const box = document.getElementById('solutionBox');
+  const btn = document.getElementById('showSolBtn');
+  if (!box.classList.contains('visible')) {
+    const html = currentChallenge.steps.map((s, i) => `<li>${s}</li>`).join('');
+    document.getElementById('solutionSteps').innerHTML = html;
+    box.classList.add('visible');
+    btn.textContent = 'Hide Solution';
+  } else {
+    box.classList.remove('visible');
+    btn.textContent = 'Show Worked Solution';
+  }
+}
+
+/* ─── Quiz tab ───────────────────────────────────────────── */
+const quiz = [
+  ['Without air resistance, the horizontal acceleration of a projectile is:',
+    ['0 m s⁻²', '9.8 m s⁻²', '−9.8 m s⁻²', 'Equal to the launch speed'], 0],
+  ['Taking upward as positive, the vertical acceleration of a projectile is:',
+    ['0 m s⁻²', '−9.8 m s⁻²', '+9.8 m s⁻²', 'Equal to the horizontal velocity'], 1],
+  ['At the highest point of an angled projectile, the vertical velocity is:',
+    ['Maximum', '0 m s⁻¹', 'Equal to g', 'Negative and large'], 1],
+  ['Which quantity is the same in both horizontal and vertical motion analysis?',
+    ['Time', 'Distance', 'Velocity component', 'Acceleration'], 0],
+  ['For equal launch and landing heights, the angle giving maximum range is:',
+    ['30°', '60°', '45°', '90°'], 2],
+  ['A ball is thrown horizontally from a cliff. Which statement is correct?',
+    ['Horizontal speed increases due to gravity',
+     'Vertical speed is constant throughout',
+     'Horizontal and vertical motions are independent',
+     'The ball lands directly below the launch point'], 2],
+  ['Two projectiles are launched at 30° and 60° from ground level with the same speed. Their ranges are:',
+    ['Different', 'Equal', '30° range is double 60° range', 'Cannot be compared'], 1],
+];
+
+function resetQuiz() {
+  let html = '';
+  quiz.forEach((q, i) => {
+    html += `<div class="question" id="qblock${i}"><b>${i + 1}. ${q[0]}</b>`;
+    q[1].forEach((a, j) => {
+      html += `<label><input type="radio" name="q${i}" value="${j}"> ${a}</label>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('quizBox').innerHTML = html;
+  document.getElementById('quizScore').textContent = '';
+  document.getElementById('scoreFill').style.width = '0%';
+}
+
+function gradeQuiz() {
+  let score = 0;
+  quiz.forEach((q, i) => {
+    const checked = document.querySelector(`input[name=q${i}]:checked`);
+    const block   = document.getElementById(`qblock${i}`);
+    block.classList.remove('correct-q', 'wrong-q');
+    if (checked && parseInt(checked.value) === q[2]) {
+      score++;
+      block.classList.add('correct-q');
+    } else {
+      block.classList.add('wrong-q');
+      // FIX: show correct answer
+      const correctLabel = block.querySelectorAll('label')[q[2]];
+      if (correctLabel) {
+        correctLabel.style.fontWeight = '800';
+        correctLabel.style.color = '#1d9a63';
+      }
+    }
+  });
+  const pct = Math.round((score / quiz.length) * 100);
+  document.getElementById('quizScore').innerHTML =
+    `Score: <span class="${score >= Math.ceil(quiz.length * 0.6) ? 'correct' : 'wrong'}">${score}/${quiz.length} (${pct}%)</span>`;
+  document.getElementById('scoreFill').style.width = pct + '%';
+  document.getElementById('scoreFill').style.background =
+    score >= Math.ceil(quiz.length * 0.6) ? 'var(--green)' : 'var(--red)';
+}
+
+/* ─── Init ───────────────────────────────────────────────── */
+window.addEventListener('resize', () => {
+  drawComponents();
+  simHasLaunched ? drawSimCanvas(null) : drawReadyState();
+  if (document.getElementById('matchGrid').children.length) buildMatchGrid();
+});
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    drawComponents();
+    updateSimLabels();
+    drawReadyState();
+    makeAngleTable();
+    newChallenge();
+    resetQuiz();
+  }, 80);
+});
+</script>
+</body>
+</html>
