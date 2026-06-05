@@ -81,9 +81,45 @@
   .match-card.correct-q{border-color:var(--green);background:#f0fff8}
   .match-card.wrong-q{border-color:var(--red);background:#fff5f5}
   .match-result{margin-top:8px;font-weight:700;font-size:14px;min-height:18px}
+  /* ── Password gate ── */
+  #pwGate{position:fixed;inset:0;background:linear-gradient(135deg,#0b1f4d 0%,#1a3a6e 100%);
+    display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+  .pw-box{background:#fff;border-radius:24px;padding:40px 36px;max-width:420px;width:100%;
+    text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+  .pw-logo{width:72px;height:72px;border-radius:18px;background:var(--blue);color:#fff;
+    display:grid;place-items:center;font-weight:900;font-size:26px;margin:0 auto 16px;
+    box-shadow:0 6px 20px rgba(30,136,216,.4)}
+  .pw-title{font-size:22px;font-weight:800;color:var(--navy);margin:0 0 4px}
+  .pw-sub{font-size:14px;color:#60718a;margin:0 0 28px}
+  .pw-input{width:100%;padding:13px 16px;border:2px solid var(--line);border-radius:12px;
+    font-size:18px;font-family:'DM Mono',monospace;letter-spacing:4px;text-align:center;
+    outline:none;transition:border-color .2s;margin-bottom:12px;box-sizing:border-box}
+  .pw-input:focus{border-color:var(--blue)}
+  .pw-input.shake{animation:shake .35s ease}
+  .pw-btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:0;
+    border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;font-family:'DM Sans',sans-serif;
+    transition:opacity .15s}
+  .pw-btn:hover{opacity:.87}
+  .pw-err{color:var(--red);font-size:13px;font-weight:700;margin-top:10px;min-height:20px}
+  .pw-hint{font-size:12px;color:#94a3b8;margin-top:18px}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}60%{transform:translateX(10px)}80%{transform:translateX(-5px)}}
 </style>
 </head>
 <body>
+
+<!-- ── Password Gate ── -->
+<div id="pwGate">
+  <div class="pw-box">
+    <div class="pw-logo">PF</div>
+    <p class="pw-title">PhysicsFlow</p>
+    <p class="pw-sub">Projectile Motion Explorer<br>Enter the access code to continue</p>
+    <input id="pwInput" class="pw-input" type="password" placeholder="••••••••" maxlength="20"
+           autocomplete="off" spellcheck="false">
+    <button class="pw-btn" onclick="checkPassword()">Unlock App →</button>
+    <div class="pw-err" id="pwErr"></div>
+    <p class="pw-hint">Access code provided by your teacher</p>
+  </div>
+</div>
 <header>
   <div class="brand">
     <div class="logo">PF</div>
@@ -313,7 +349,53 @@
 </main>
 
 <script>
-/* ─── Constants & State ─────────────────────────────────── */
+/* ─── Password Gate ──────────────────────────────────────── */
+// SHA-256 hash of the password. Default password: physics2025
+// To change: run  sha256("yournewpassword")  in browser console and paste the hash below.
+const PW_HASH = "00032971f928981123c9d7007f1186d5947ce762d37036b4cea754e99a385de2";
+
+// Use Web Crypto to hash whatever the user types, compare to PW_HASH
+async function sha256(str) {
+  const buf = await crypto.subtle.digest("SHA-256",
+    new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+async function checkPassword() {
+  const input = document.getElementById("pwInput").value.trim();
+  if (!input) return;
+  const hash = await sha256(input);
+  if (hash === PW_HASH) {
+    // Correct — fade out gate and unlock
+    const gate = document.getElementById("pwGate");
+    gate.style.transition = "opacity .5s ease";
+    gate.style.opacity = "0";
+    setTimeout(() => { gate.style.display = "none"; }, 500);
+    // Store in sessionStorage so refresh within the session doesn't re-prompt
+    sessionStorage.setItem("pf_unlocked", "1");
+  } else {
+    const inp = document.getElementById("pwInput");
+    document.getElementById("pwErr").textContent = "Incorrect code. Try again.";
+    inp.classList.remove("shake");
+    void inp.offsetWidth; // reflow to restart animation
+    inp.classList.add("shake");
+    inp.value = "";
+    inp.focus();
+  }
+}
+
+// Allow Enter key to submit
+document.addEventListener("DOMContentLoaded", () => {
+  const inp = document.getElementById("pwInput");
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") checkPassword(); });
+  inp.focus();
+
+  // If already unlocked this session, skip gate immediately
+  if (sessionStorage.getItem("pf_unlocked") === "1") {
+    document.getElementById("pwGate").style.display = "none";
+  }
+});
+
 const G = 9.8; // magnitude; use signs explicitly in formulas
 let anim = null;
 let currentChallenge = { answer: 0, steps: [] };
